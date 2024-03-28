@@ -23,21 +23,21 @@ jobs:
           toolchain: stable
 
       - name: Check code formatting
-        run: cargo fmt -- --check
+        run: cargo fmt -- --check --manifest-path=.Cargo.toml
         working-directory: ${{ github.workspace }}
 
       - name: Check for clippy warnings
-        run: cargo clippy -- -D warnings
+        run: cargo clippy -- -D warnings --manifest-path=.Cargo.toml
         working-directory: ${{ github.workspace }}
 
       - name: Run tests
-        run: cargo test
+        run: cargo test --manifest-path=.Cargo.toml
         working-directory: ${{ github.workspace }}
 
       - name: Audit dependencies
-        run: cargo audit
+        run: cargo audit --manifest-path=.Cargo.toml
         working-directory: ${{ github.workspace }}
 
       - name: Build release
-        run: cargo build --release
+        run: cargo build --release --manifest-path=.Cargo.toml
         working-directory: ${{ github.workspace }}

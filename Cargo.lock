@@ -1,0 +1,27 @@
+[[package]]
+name = "ssh2"
+version = "0.9.4"
+
+[[package]]
+name = "trust-dns-resolver"
+version = "0.23.2"
+
+[[package]]
+name = "serde"
+version = "1.0.197"
+
+[[package]]
+name = "serde_json"
+version = "1.0.115"
+
+[[package]]
+name = "reqwest"
+version = "0.12.2"
+
+[[package]]
+name = "webdriver-client"
+version = "0.2.5"
+
+[[package]]
+name = "zip"
+version = "0.6.6"

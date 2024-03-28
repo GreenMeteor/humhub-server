@@ -23,7 +23,7 @@ jobs:
           toolchain: stable
 
       - name: Check code formatting
-        run: cargo fmt -- --check --manifest-path=Cargo.toml
+        run: cargo fmt -- --check
         working-directory: ${{ github.workspace }}
 
       - name: Check for clippy warnings

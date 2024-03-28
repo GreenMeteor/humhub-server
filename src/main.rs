@@ -1,6 +1,6 @@
 use std::io::{self, Read};
 use std::fs::File;
-use serde::{Deserialize};
+use serde::Deserialize;
 use trust_dns_resolver::{Resolver, config::ResolverConfig, config::ResolverOpts};
 use std::net::TcpStream;
 
@@ -20,27 +20,31 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
+    // Read configuration from file
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
 
+    // Initialize DNS resolver
     let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())?;
     let response = resolver.lookup_ip(&config.domain_name)?;
-
     println!("DNS record updated successfully: {:?}", response);
 
+    // Connect to SSH server
     let _tcp = TcpStream::connect(format!("{}:22", config.host))?;
-
     let mut sess = ssh2::Session::new()?;
+
+    // Handshake with SSH server
     if let Err(err) = sess.handshake() {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
 
+    // Authenticate with SSH server using username and password
     if let Err(err) = sess.userauth_password(&config.username, &config.password) {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
 
-    // Install PHP 8.1 and required extensions
-    let commands = vec![
+    // Define commands to install required software
+    let commands = [
         "sudo apt update",
         "sudo apt upgrade -y",
         "sudo apt install -y apache2",
@@ -66,7 +70,7 @@ fn run() -> io::Result<()> {
         println!("{}", output);
     }
 
-    // Modify Apache virtual host configuration to handle requests for the domain
+    // Modify Apache virtual host configuration
     let apache_config = format!(
         r#"
         <VirtualHost *:80>
@@ -82,7 +86,10 @@ fn run() -> io::Result<()> {
         &config.domain_name, &config.domain_name, &config.domain_name
     );
 
-    if let Err(err) = channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, &config.domain_name)) {
+    if let Err(err) = channel.exec(&format!(
+        "echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf",
+        apache_config, &config.domain_name
+    )) {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
     if let Err(err) = channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name)) {

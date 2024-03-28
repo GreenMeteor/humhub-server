@@ -3,9 +3,10 @@ use std::io::{self, Read};
 use std::fs::File;
 
 use ssh2::Session;
-use trust_dns_resolver::{Resolver, system_conf::read_system_conf};
+use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 struct Config {
     domain_name: String,
     server_ip: String,
@@ -25,17 +26,14 @@ fn run() -> io::Result<()> {
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
 
-    let resolver = Resolver::new(trust_dns_resolver::config::ResolverConfig::default(), read_system_conf())?;
-    let response = match resolver.update_record(&config.domain_name, &config.server_ip) {
-        Ok(response) => response,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-    };
+    let resolver = Resolver::new(ResolverConfig::default(), ())?;
+    let response = resolver.lookup_ip(&config.domain_name)?;
 
     println!("DNS record updated successfully: {:?}", response);
 
     let tcp = TcpStream::connect(format!("{}:22", config.host))?;
     let mut sess = Session::new()?;
-    if let Err(err) = sess.handshake() {
+    if let Err(err) = sess.handshake(&tcp) {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
 

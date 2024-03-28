@@ -1,9 +1,8 @@
 use std::net::TcpStream;
 use std::io::{self, Read};
 use std::fs::File;
-
-use ssh2::Session;
-use trust_dns_resolver::{Resolver, config::ResolverConfig};
+use serde::{Deserialize};
+use trust_dns_resolver::{Resolver, config::ResolverConfig, ResolverOpts};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -25,14 +24,14 @@ fn run() -> io::Result<()> {
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
 
-    let resolver = Resolver::new(ResolverConfig::default())?;
+    let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())?;
     let response = resolver.lookup_ip(&config.domain_name)?;
 
     println!("DNS record updated successfully: {:?}", response);
 
     let tcp = TcpStream::connect(format!("{}:22", config.host))?;
-    let mut sess = Session::new()?;
-    if let Err(err) = sess.handshake() {
+    let mut sess = ssh2::Session::new()?;
+    if let Err(err) = sess.handshake(&tcp) {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
 

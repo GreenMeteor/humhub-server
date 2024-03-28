@@ -2,6 +2,8 @@ use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;
 use serde::Deserialize;
+use reqwest::blocking;
+use zip;
 
 // Define a struct to deserialize the JSON configuration
 #[derive(Debug, Deserialize)]
@@ -25,7 +27,7 @@ pub fn download() -> io::Result<()> {
     let humhub_extract_dir = "/var/www/html";
 
     // Initialize HTTP client
-    let client = reqwest::blocking::Client::new();
+    let client = blocking::Client::new();
 
     // Download HumHub
     let mut response = client.get(humhub_download_url).send()?;

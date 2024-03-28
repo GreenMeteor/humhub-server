@@ -1,13 +1,12 @@
-use std::net::TcpStream;
 use std::io::{self, Read};
 use std::fs::File;
 use serde::{Deserialize};
 use trust_dns_resolver::{Resolver, config::ResolverConfig, config::ResolverOpts};
+use std::net::TcpStream;
 
 #[derive(Debug, Deserialize)]
 struct Config {
     domain_name: String,
-    server_ip: String,
     host: String,
     username: String,
     password: String,
@@ -29,7 +28,8 @@ fn run() -> io::Result<()> {
 
     println!("DNS record updated successfully: {:?}", response);
 
-    let tcp = TcpStream::connect(format!("{}:22", config.host))?;
+    let _tcp = TcpStream::connect(format!("{}:22", config.host))?;
+
     let mut sess = ssh2::Session::new()?;
     if let Err(err) = sess.handshake() {
         return Err(io::Error::new(io::ErrorKind::Other, err));

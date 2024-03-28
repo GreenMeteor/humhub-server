@@ -1,8 +1,3 @@
-extern crate ssh2;
-extern crate trust_dns_resolver;
-extern crate serde;
-extern crate serde_json;
-
 use std::net::TcpStream;
 use std::io::{self, Read, Write};
 use std::fs::File;
@@ -42,34 +37,18 @@ fn run() -> io::Result<()> {
     ];
 
     // Update DNS records to point to the server's IP address
-    let resolver = match Resolver::new(ResolverConfig::default(), read_system_conf()) {
-        Ok(resolver) => resolver,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-    };
-    let mut response = match resolver.update_record(&config.domain_name, &config.server_ip) {
-        Ok(response) => response,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-    };
+    let resolver = Resolver::new(ResolverConfig::default(), read_system_conf())?;
+    let mut response = resolver.update_record(&config.domain_name, &config.server_ip)?;
 
     println!("DNS record updated successfully: {:?}", response);
 
     // Connect to the server via SSH
-    let tcp = match TcpStream::connect(format!("{}:22", config.host)) {
-        Ok(tcp) => tcp,
-        Err(err) => return Err(err),
-    };
-    let mut sess = match Session::new() {
-        Ok(sess) => sess,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-    };
-    if let Err(err) = sess.handshake(&tcp) {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
-    }
+    let tcp = TcpStream::connect(format!("{}:22", config.host))?;
+    let mut sess = Session::new()?;
+    sess.handshake(&tcp)?;
 
     // Authenticate with username and password
-    if let Err(err) = sess.userauth_password(&config.username, &config.password) {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
-    }
+    sess.userauth_password(&config.username, &config.password)?;
 
     // Install PHP 8.1 and required extensions
     let mut commands = vec![
@@ -91,17 +70,15 @@ fn run() -> io::Result<()> {
     }
 
     // Execute commands remotely
-    let mut channel = match sess.channel_session() {
-        Ok(channel) => channel,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-    };
+    let mut channel = sess.channel_session()?;
     for cmd in &commands {
+        let mut channel = sess.channel_session()?;
         if let Err(err) = channel.exec(cmd) {
-            return Err(io::Error::new(io::ErrorKind::Other, err));
+            return Err(err.into());
         }
         let mut output = String::new();
         if let Err(err) = channel.read_to_string(&mut output) {
-            return Err(io::Error::new(io::ErrorKind::Other, err));
+            return Err(err.into());
         }
         println!("{}", output);
     }
@@ -122,22 +99,23 @@ fn run() -> io::Result<()> {
         &config.domain_name, &config.domain_name, &config.domain_name
     );
 
+    let mut channel = sess.channel_session()?;
     if let Err(err) = channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, &config.domain_name)) {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
+        return Err(err.into());
     }
     if let Err(err) = channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name)) {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
+        return Err(err.into());
     }
     if let Err(err) = channel.exec("sudo systemctl reload apache2") {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
+        return Err(err.into());
     }
 
     // Close the SSH session
     if let Err(err) = channel.send_eof() {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
+        return Err(err.into());
     }
     if let Err(err) = channel.wait_close() {
-        return Err(io::Error::new(io::ErrorKind::Other, err));
+        return Err(err.into());
     }
 
     Ok(())

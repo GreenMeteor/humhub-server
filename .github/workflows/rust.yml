@@ -31,29 +31,24 @@ jobs:
         run: ls -la
         working-directory: ${{ github.workspace }}
 
-      # Add a step to change directory to the correct location
-      - name: Change directory
-        run: cd humhub-server
-
       # Add a step to check if Cargo can parse the manifest
       - name: Check Cargo manifest
         run: cargo check
-        working-directory: ${{ github.workspace }}/humhub-server
-
-      # Add a step to create tests
-      - name: Create tests
-        run: cargo test --lib
-        working-directory: ${{ github.workspace }}/humhub-server
+        working-directory: ${{ github.workspace }}
 
       # Add other steps for testing, clippy checks, etc.
       - name: Check for clippy warnings
         run: cargo clippy -- -D warnings
-        working-directory: ${{ github.workspace }}/humhub-server
+        working-directory: ${{ github.workspace }}
+
+      - name: Run tests
+        run: cargo test
+        working-directory: ${{ github.workspace }}
 
       - name: Audit dependencies
         run: cargo audit
-        working-directory: ${{ github.workspace }}/humhub-server
+        working-directory: ${{ github.workspace }}
 
       - name: Build release
         run: cargo build --release
-        working-directory: ${{ github.workspace }}/humhub-server
+        working-directory: ${{ github.workspace }}

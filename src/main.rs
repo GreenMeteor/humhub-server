@@ -3,22 +3,14 @@ extern crate trust_dns_resolver;
 extern crate serde;
 extern crate serde_json;
 
-use std::{
-    fs::File,
-    io::{self, Read, Write},
-    net::TcpStream,
-};
+use std::io::{self, Read};
+use std::fs::File;
 
 use ssh2::Session;
-use serde::{Deserialize, Serialize};
-use trust_dns_resolver::{
-    config::ResolverConfig,
-    system_conf::read_system_conf,
-    Resolver,
-};
+use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
 
 // Define a struct to deserialize the JSON configuration
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct Config {
     host: String,
     username: String,
@@ -42,20 +34,19 @@ fn main() -> io::Result<()> {
 
     // Update DNS records to point to the server's IP address
     let resolver = Resolver::new(ResolverConfig::default(), read_system_conf()?)?;
-    let response = resolver
-        .update_record(&config.domain_name, &config.server_ip)
-        .expect("Failed to update DNS record");
-
+    let response = resolver.update_record(&config.domain_name, &config.server_ip)?;
     println!("DNS record updated successfully: {:?}", response);
 
     // Connect to the server via SSH
-    let tcp = TcpStream::connect(format!("{}:22", config.host))?;
+    let tcp = std::net::TcpStream::connect(format!("{}:22", config.host))?;
     let mut sess = Session::new()?;
     sess.handshake(&tcp)?;
+
+    // Authentication using password
     sess.userauth_password(&config.username, &config.password)?;
 
     // Install PHP 8.1 and required extensions
-    let mut commands = vec![
+    let commands = vec![
         "sudo apt update",
         "sudo apt upgrade -y",
         "sudo apt install -y apache2",
@@ -68,11 +59,6 @@ fn main() -> io::Result<()> {
         "sudo systemctl restart apache2",
     ];
 
-    // Add installation commands for PHP extensions required by HumHub
-    for extension in &php_extensions {
-        commands.push(&format!("sudo apt install -y {}", extension));
-    }
-
     // Execute commands remotely
     let mut channel = sess.channel_session()?;
     for cmd in &commands {
@@ -82,32 +68,9 @@ fn main() -> io::Result<()> {
         println!("{}", output);
     }
 
-    // Modify Apache virtual host configuration to handle requests for the domain
-    let apache_config = format!(
-        r#"
-        <VirtualHost *:80>
-            ServerName {}
-            DocumentRoot /var/www/html/{}
-            <Directory /var/www/html/{}>
-                Options Indexes FollowSymLinks
-                AllowOverride All
-                Require all granted
-            </Directory>
-        </VirtualHost>
-        "#,
-        &config.domain_name, &config.domain_name, &config.domain_name
-    );
-
-    channel.exec(&format!(
-        "echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf",
-        apache_config, &config.domain_name
-    ))?;
-    channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name))?;
-    channel.exec("sudo systemctl reload apache2")?;
-
     // Close the SSH session
     channel.send_eof()?;
     channel.wait_close()?;
-    
+
     Ok(())
 }

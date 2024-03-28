@@ -1,10 +1,10 @@
 use std::net::TcpStream;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::fs::File;
 
 use ssh2::Session;
 use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 // Define a struct to deserialize the JSON configuration
 #[derive(Debug, Deserialize)]
@@ -28,17 +28,19 @@ fn run() -> io::Result<()> {
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
 
-    // Additional PHP extensions required by HumHub
-    let php_extensions = vec![
-        "php8.1-intl",
-        "php8.1-bcmath",
-        "php8.1-gmp",
-        "php8.1-ldap",
-    ];
-
     // Update DNS records to point to the server's IP address
-    let resolver = Resolver::new(ResolverConfig::default(), read_system_conf())?;
-    let mut response = resolver.update_record(&config.domain_name, &config.server_ip)?;
+    let (resolver_config, resolver_opts) = match read_system_conf() {
+        Ok((config, opts)) => (config, opts),
+        Err(err) => return Err(err),
+    };
+    let resolver = match Resolver::new(resolver_config, resolver_opts) {
+        Ok(resolver) => resolver,
+        Err(err) => return Err(err),
+    };
+    let response = match resolver.update_record(&config.domain_name, &config.server_ip) {
+        Ok(response) => response,
+        Err(err) => return Err(err),
+    };
 
     println!("DNS record updated successfully: {:?}", response);
 
@@ -51,7 +53,8 @@ fn run() -> io::Result<()> {
     sess.userauth_password(&config.username, &config.password)?;
 
     // Install PHP 8.1 and required extensions
-    let mut commands = vec![
+    let mut channel = sess.channel_session()?;
+    let commands = vec![
         "sudo apt update",
         "sudo apt upgrade -y",
         "sudo apt install -y apache2",
@@ -64,22 +67,11 @@ fn run() -> io::Result<()> {
         "sudo systemctl restart apache2",
     ];
 
-    // Add installation commands for PHP extensions required by HumHub
-    for extension in &php_extensions {
-        commands.push(&format!("sudo apt install -y {}", extension));
-    }
-
     // Execute commands remotely
-    let mut channel = sess.channel_session()?;
     for cmd in &commands {
-        let mut channel = sess.channel_session()?;
-        if let Err(err) = channel.exec(cmd) {
-            return Err(err.into());
-        }
+        channel.exec(cmd)?;
         let mut output = String::new();
-        if let Err(err) = channel.read_to_string(&mut output) {
-            return Err(err.into());
-        }
+        channel.read_to_string(&mut output)?;
         println!("{}", output);
     }
 
@@ -96,27 +88,16 @@ fn run() -> io::Result<()> {
             </Directory>
         </VirtualHost>
         "#,
-        &config.domain_name, &config.domain_name, &config.domain_name
+        config.domain_name, config.domain_name, config.domain_name
     );
 
-    let mut channel = sess.channel_session()?;
-    if let Err(err) = channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, &config.domain_name)) {
-        return Err(err.into());
-    }
-    if let Err(err) = channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name)) {
-        return Err(err.into());
-    }
-    if let Err(err) = channel.exec("sudo systemctl reload apache2") {
-        return Err(err.into());
-    }
+    channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, config.domain_name))?;
+    channel.exec(&format!("sudo a2ensite {}.conf", config.domain_name))?;
+    channel.exec("sudo systemctl reload apache2")?;
 
     // Close the SSH session
-    if let Err(err) = channel.send_eof() {
-        return Err(err.into());
-    }
-    if let Err(err) = channel.wait_close() {
-        return Err(err.into());
-    }
+    channel.send_eof()?;
+    channel.wait_close()?;
 
     Ok(())
 }

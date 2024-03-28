@@ -1,0 +1,2 @@
+[dependencies]
+ssh2 = "0.10.1"

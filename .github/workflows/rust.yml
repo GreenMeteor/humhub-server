@@ -21,12 +21,21 @@ jobs:
         run: chmod -R 755 .
         working-directory: ${{ github.workspace }}
 
+      # Add a step to check if Cargo can parse the locked dependencies
+      - name: Check Cargo manifest
+        run: cargo check --locked
+        working-directory: ${{ github.workspace }}
+
       # Add a step to create tests
       - name: Create tests
         run: cargo test --no-run
         working-directory: ${{ github.workspace }}
 
-      # Add a step to run tests
+      # Add other steps for testing, clippy checks, etc.
+      - name: Check for clippy warnings
+        run: cargo clippy -- -D warnings
+        working-directory: ${{ github.workspace }}
+
       - name: Run tests
         run: cargo test
         working-directory: ${{ github.workspace }}

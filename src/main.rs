@@ -3,17 +3,15 @@ use std::io::{self, Read};
 use std::fs::File;
 
 use ssh2::Session;
-use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
-use serde::Deserialize;
+use trust_dns_resolver::{Resolver, system_conf::read_system_conf};
 
-// Define a struct to deserialize the JSON configuration
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 struct Config {
+    domain_name: String,
+    server_ip: String,
     host: String,
     username: String,
     password: String,
-    domain_name: String,
-    server_ip: String,
 }
 
 fn main() {
@@ -24,36 +22,28 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
-    // Read JSON file and deserialize into Config struct
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
 
-    // Update DNS records to point to the server's IP address
-    let (resolver_config, resolver_opts) = match read_system_conf() {
-        Ok((config, opts)) => (config, opts),
-        Err(err) => return Err(err),
-    };
-    let resolver = match Resolver::new(resolver_config, resolver_opts) {
-        Ok(resolver) => resolver,
-        Err(err) => return Err(err),
-    };
+    let resolver = Resolver::new(trust_dns_resolver::config::ResolverConfig::default(), read_system_conf())?;
     let response = match resolver.update_record(&config.domain_name, &config.server_ip) {
         Ok(response) => response,
-        Err(err) => return Err(err),
+        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
     };
 
     println!("DNS record updated successfully: {:?}", response);
 
-    // Connect to the server via SSH
     let tcp = TcpStream::connect(format!("{}:22", config.host))?;
     let mut sess = Session::new()?;
-    sess.handshake(&tcp)?;
+    if let Err(err) = sess.handshake() {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
 
-    // Authenticate with username and password
-    sess.userauth_password(&config.username, &config.password)?;
+    if let Err(err) = sess.userauth_password(&config.username, &config.password) {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
 
     // Install PHP 8.1 and required extensions
-    let mut channel = sess.channel_session()?;
     let commands = vec![
         "sudo apt update",
         "sudo apt upgrade -y",
@@ -68,10 +58,15 @@ fn run() -> io::Result<()> {
     ];
 
     // Execute commands remotely
+    let mut channel = sess.channel_session()?;
     for cmd in &commands {
-        channel.exec(cmd)?;
+        if let Err(err) = channel.exec(cmd) {
+            return Err(io::Error::new(io::ErrorKind::Other, err));
+        }
         let mut output = String::new();
-        channel.read_to_string(&mut output)?;
+        if let Err(err) = channel.read_to_string(&mut output) {
+            return Err(io::Error::new(io::ErrorKind::Other, err));
+        }
         println!("{}", output);
     }
 
@@ -88,16 +83,26 @@ fn run() -> io::Result<()> {
             </Directory>
         </VirtualHost>
         "#,
-        config.domain_name, config.domain_name, config.domain_name
+        &config.domain_name, &config.domain_name, &config.domain_name
     );
 
-    channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, config.domain_name))?;
-    channel.exec(&format!("sudo a2ensite {}.conf", config.domain_name))?;
-    channel.exec("sudo systemctl reload apache2")?;
+    if let Err(err) = channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, &config.domain_name)) {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
+    if let Err(err) = channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name)) {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
+    if let Err(err) = channel.exec("sudo systemctl reload apache2") {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
 
     // Close the SSH session
-    channel.send_eof()?;
-    channel.wait_close()?;
+    if let Err(err) = channel.send_eof() {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
+    if let Err(err) = channel.wait_close() {
+        return Err(io::Error::new(io::ErrorKind::Other, err));
+    }
 
     Ok(())
 }

@@ -28,7 +28,7 @@ jobs:
 
       # Add a step to check if Cargo can parse the manifest
       - name: Check Cargo manifest
-        run: cargo check --manifest-path=Cargo.toml
+        run: cargo check
         working-directory: ${{ github.workspace }}
 
       # Add other steps for testing, clippy checks, etc.

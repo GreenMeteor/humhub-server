@@ -4,13 +4,16 @@ extern crate zip;
 extern crate serde;
 extern crate serde_json;
 
-use std::fs::File;
-use std::io::copy;
-use std::path::Path;
-use serde::{Deserialize, Serialize};
+use std::{
+    fs::{self, File},
+    io::{self, copy},
+    path::Path,
+};
 
 use reqwest::blocking::Client;
+use serde::Deserialize;
 use webdriver_client::{Browser, DesiredCapabilities, Session};
+use zip::ZipArchive;
 
 // Define a struct to deserialize the JSON configuration
 #[derive(Debug, Deserialize)]
@@ -19,10 +22,10 @@ struct Config {
 }
 
 // Function to encapsulate download functionality
-pub fn download_humhub() {
+pub fn download() -> io::Result<()> {
     // Read JSON file and deserialize into Config struct
-    let config_file = File::open("config.json").expect("Failed to open config file");
-    let config: Config = serde_json::from_reader(config_file).expect("Failed to parse config file");
+    let config_file = File::open("config.json")?;
+    let config: Config = serde_json::from_reader(config_file)?;
 
     // Extract domain name from the configuration
     let domain_name = &config.domain_name;
@@ -40,42 +43,44 @@ pub fn download_humhub() {
     let client = Client::new();
 
     // Download HumHub
-    let mut response = client.get(humhub_download_url).send().unwrap();
-    let mut zip_file = File::create(humhub_zip_path).unwrap();
-    copy(&mut response.bytes().unwrap().as_ref(), &mut zip_file).unwrap();
+    let mut response = client.get(humhub_download_url).send()?;
+    let mut zip_file = File::create(humhub_zip_path)?;
+    copy(&mut response.bytes()?.as_ref(), &mut zip_file)?;
 
     // Extract HumHub ZIP file to the root directory
     let extract_dir = Path::new(humhub_extract_dir);
-    let zip_file = File::open(humhub_zip_path).unwrap();
-    let mut archive = zip::ZipArchive::new(zip_file).unwrap();
+    let zip_file = File::open(humhub_zip_path)?;
+    let mut archive = ZipArchive::new(zip_file)?;
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).unwrap();
+        let mut file = archive.by_index(i)?;
         let outpath = extract_dir.join(file.sanitized_name());
 
         if let Some(parent) = outpath.parent() {
             if !parent.exists() {
-                std::fs::create_dir_all(parent).unwrap();
+                fs::create_dir_all(parent)?;
             }
         }
 
         if (&*file.name()).ends_with('/') {
-            std::fs::create_dir_all(&outpath).unwrap();
+            fs::create_dir_all(&outpath)?;
         } else {
-            let mut outfile = File::create(&outpath).unwrap();
-            std::io::copy(&mut file, &mut outfile).unwrap();
+            let mut outfile = File::create(&outpath)?;
+            copy(&mut file, &mut outfile)?;
         }
     }
 
     println!("HumHub downloaded and extracted successfully to {}", humhub_extract_dir);
 
     // Set up WebDriver session
-    let mut session = Session::new(Browser::Chrome, DesiredCapabilities::chrome()).unwrap();
-    session.open().unwrap();
+    let mut session = Session::new(Browser::Chrome, DesiredCapabilities::chrome())?;
+    session.open()?;
 
     // Navigate to the domain name
-    session.navigate(&format!("http://{}", domain_name)).unwrap();
+    session.navigate(&format!("http://{}", domain_name))?;
 
     // Close the WebDriver session
-    session.close().unwrap();
+    session.close()?;
+    
+    Ok(())
 }

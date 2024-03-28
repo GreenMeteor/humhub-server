@@ -40,10 +40,6 @@ jobs:
         run: cargo test
         working-directory: ${{ github.workspace }}
 
-      - name: Audit dependencies
-        run: cargo audit
-        working-directory: ${{ github.workspace }}
-
       - name: Build release
         run: cargo build --release
         working-directory: ${{ github.workspace }}

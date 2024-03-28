@@ -4,7 +4,7 @@ use std::fs::File;
 
 use ssh2::Session;
 use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 struct Config {

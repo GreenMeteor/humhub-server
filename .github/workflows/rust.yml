@@ -16,12 +16,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Add a step to audit dependencies
+      # Add a step to set file permissions for the working directory
+      - name: Set file permissions
+        run: chmod -R 755 .
+        working-directory: ${{ github.workspace }}
+
+      # Add a step to print the contents of the Cargo.toml file (optional)
+      - name: Print Cargo.toml
+        run: cat Cargo.toml
+        working-directory: ${{ github.workspace }}
+
+      # Add a step to list files in the working directory for debugging (optional)
+      - name: List files in working directory
+        run: ls -la
+        working-directory: ${{ github.workspace }}
+
+      # Add a step to check if Cargo can parse the manifest
+      - name: Check Cargo manifest
+        run: cargo check
+        working-directory: ${{ github.workspace }}
+
+      # Add a step to create tests
+      - name: Create tests
+        run: cargo test --lib
+        working-directory: ${{ github.workspace }}
+
+      # Add other steps for testing, clippy checks, etc.
+      - name: Check for clippy warnings
+        run: cargo clippy -- -D warnings
+        working-directory: ${{ github.workspace }}
+
       - name: Audit dependencies
         run: cargo audit
         working-directory: ${{ github.workspace }}
 
-      # Add a step to build the release version
       - name: Build release
         run: cargo build --release
         working-directory: ${{ github.workspace }}

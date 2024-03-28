@@ -1,0 +1,7 @@
+{
+    "host": "your_host",
+    "username": "your_username",
+    "password": "your_password",
+    "domain_name": "your_domain.com",
+    "server_ip": "your_server_ip"
+}

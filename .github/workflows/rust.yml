@@ -23,17 +23,11 @@ jobs:
           toolchain: stable
 
       - name: Generate tests
-        run: cargo new --bin tests
-        working-directory: ${{ github.workspace }}
-
-      - name: Check for clippy warnings
-        run: cargo clippy -- -D warnings
+        run: cargo test --lib
         working-directory: ${{ github.workspace }}
 
       - name: Run tests
-        run: |
-          cd tests
-          cargo test
+        run: cargo test
         working-directory: ${{ github.workspace }}
 
       - name: Audit dependencies

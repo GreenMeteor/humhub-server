@@ -3,22 +3,23 @@ extern crate trust_dns_resolver;
 
 use std::net::TcpStream;
 use std::io::{Read, Write};
+use std::env;
 
 use ssh2::Session;
 use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
 
 fn main() {
-    // SSH connection parameters
-    let host = "your_server_ip";
-    let username = "your_username";
-    let password = "your_password";
-    let port = 22;
-
-    // Domain name to connect to the server
-    let domain_name = "your_domain.com";
-
-    // IP address of the server
-    let server_ip = "your_server_ip";
+    // Parse command line arguments
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 6 {
+        println!("Usage: {} <host> <username> <password> <domain_name> <server_ip>", args[0]);
+        return;
+    }
+    let host = &args[1];
+    let username = &args[2];
+    let password = &args[3];
+    let domain_name = &args[4];
+    let server_ip = &args[5];
 
     // Additional PHP extensions required by HumHub
     let php_extensions = vec![
@@ -35,7 +36,7 @@ fn main() {
     println!("DNS record updated successfully: {:?}", response);
 
     // Connect to the server via SSH
-    let tcp = TcpStream::connect(format!("{}:{}", host, port)).unwrap();
+    let tcp = TcpStream::connect(format!("{}:22", host)).unwrap();
     let mut sess = Session::new().unwrap();
     sess.handshake(&tcp).unwrap();
     sess.userauth_password(username, password).unwrap();

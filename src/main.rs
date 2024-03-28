@@ -33,7 +33,7 @@ fn main() -> io::Result<()> {
     ];
 
     // Update DNS records to point to the server's IP address
-    let resolver = Resolver::new(ResolverConfig::default(), read_system_conf()?)?;
+    let (resolver, _opts) = Resolver::new(ResolverConfig::default(), read_system_conf()?)?;
     let response = resolver.update_record(&config.domain_name, &config.server_ip)?;
     println!("DNS record updated successfully: {:?}", response);
 

@@ -79,8 +79,8 @@ fn main() {
         r#"
         <VirtualHost *:80>
             ServerName {}
-            DocumentRoot /var/www/{}
-            <Directory /var/www/{}>
+            DocumentRoot /var/www/html/{}
+            <Directory /var/www/html/{}>
                 Options Indexes FollowSymLinks
                 AllowOverride All
                 Require all granted

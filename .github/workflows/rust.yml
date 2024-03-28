@@ -1,0 +1,35 @@
+name: Rust CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Check code formatting
+        run: cargo fmt -- --check
+        working-directory: ${{ github.workspace }}
+
+      - name: Check for clippy warnings
+        run: cargo clippy -- -D warnings
+        working-directory: ${{ github.workspace }}
+
+      - name: Run tests
+        run: cargo test
+        working-directory: ${{ github.workspace }}

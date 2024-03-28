@@ -3,8 +3,8 @@ extern crate zip;
 extern crate serde;
 extern crate serde_json;
 
+use std::io::{self, Write};
 use std::fs::File;
-use std::io::copy;
 use std::path::Path;
 use serde::Deserialize;
 
@@ -15,7 +15,7 @@ struct Config {
 }
 
 // Function to encapsulate download functionality
-pub fn download() -> Result<(), Box<dyn std::error::Error>> {
+pub fn download() -> io::Result<()> {
     // Read JSON file and deserialize into Config struct
     let config_file = File::open("config.json")?;
     let config: Config = serde_json::from_reader(config_file)?;
@@ -35,7 +35,7 @@ pub fn download() -> Result<(), Box<dyn std::error::Error>> {
     // Download HumHub
     let mut response = client.get(humhub_download_url).send()?;
     let mut zip_file = File::create(humhub_zip_path)?;
-    copy(&mut response, &mut zip_file)?;
+    io::copy(&mut response, &mut zip_file)?;
 
     // Extract HumHub ZIP file to the root directory
     let extract_dir = Path::new(humhub_extract_dir);
@@ -56,7 +56,7 @@ pub fn download() -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir_all(&outpath)?;
         } else {
             let mut outfile = File::create(&outpath)?;
-            copy(&mut file, &mut outfile)?;
+            io::copy(&mut file, &mut outfile)?;
         }
     }
 

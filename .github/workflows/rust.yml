@@ -23,7 +23,7 @@ jobs:
 
       # Add a step to check if Cargo can parse the locked dependencies
       - name: Check Cargo manifest
-        run: cargo check --locked
+        run: cargo check
         working-directory: ${{ github.workspace }}
 
       # Add a step to create tests

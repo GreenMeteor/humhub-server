@@ -18,7 +18,8 @@ struct Config {
     domain_name: String,
 }
 
-fn main() {
+// Function to encapsulate download functionality
+pub fn download_humhub() {
     // Read JSON file and deserialize into Config struct
     let config_file = File::open("config.json").expect("Failed to open config file");
     let config: Config = serde_json::from_reader(config_file).expect("Failed to parse config file");

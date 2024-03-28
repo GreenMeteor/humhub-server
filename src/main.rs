@@ -1,25 +1,30 @@
 extern crate ssh2;
 extern crate trust_dns_resolver;
+extern crate serde;
+extern crate serde_json;
 
 use std::net::TcpStream;
 use std::io::{Read, Write};
-use std::env;
+use std::fs::File;
 
 use ssh2::Session;
 use trust_dns_resolver::{Resolver, config::ResolverConfig, system_conf::read_system_conf};
+use serde::{Deserialize, Serialize};
+
+// Define a struct to deserialize the JSON configuration
+#[derive(Debug, Deserialize)]
+struct Config {
+    host: String,
+    username: String,
+    password: String,
+    domain_name: String,
+    server_ip: String,
+}
 
 fn main() {
-    // Parse command line arguments
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 6 {
-        println!("Usage: {} <host> <username> <password> <domain_name> <server_ip>", args[0]);
-        return;
-    }
-    let host = &args[1];
-    let username = &args[2];
-    let password = &args[3];
-    let domain_name = &args[4];
-    let server_ip = &args[5];
+    // Read JSON file and deserialize into Config struct
+    let config_file = File::open("config.json").expect("Failed to open config file");
+    let config: Config = serde_json::from_reader(config_file).expect("Failed to parse config file");
 
     // Additional PHP extensions required by HumHub
     let php_extensions = vec![
@@ -31,15 +36,15 @@ fn main() {
 
     // Update DNS records to point to the server's IP address
     let resolver = Resolver::new(ResolverConfig::default(), read_system_conf().unwrap()).unwrap();
-    let mut response = resolver.update_record(domain_name, server_ip).unwrap();
+    let mut response = resolver.update_record(&config.domain_name, &config.server_ip).unwrap();
 
     println!("DNS record updated successfully: {:?}", response);
 
     // Connect to the server via SSH
-    let tcp = TcpStream::connect(format!("{}:22", host)).unwrap();
+    let tcp = TcpStream::connect(format!("{}:22", config.host)).unwrap();
     let mut sess = Session::new().unwrap();
     sess.handshake(&tcp).unwrap();
-    sess.userauth_password(username, password).unwrap();
+    sess.userauth_password(&config.username, &config.password).unwrap();
 
     // Install PHP 8.1 and required extensions
     let mut commands = vec![
@@ -82,11 +87,11 @@ fn main() {
             </Directory>
         </VirtualHost>
         "#,
-        domain_name, domain_name, domain_name
+        &config.domain_name, &config.domain_name, &config.domain_name
     );
 
-    channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, domain_name)).unwrap();
-    channel.exec(&format!("sudo a2ensite {}.conf", domain_name)).unwrap();
+    channel.exec(&format!("echo '{}' | sudo tee /etc/apache2/sites-available/{}.conf", apache_config, &config.domain_name)).unwrap();
+    channel.exec(&format!("sudo a2ensite {}.conf", &config.domain_name)).unwrap();
     channel.exec("sudo systemctl reload apache2").unwrap();
 
     // Close the SSH session

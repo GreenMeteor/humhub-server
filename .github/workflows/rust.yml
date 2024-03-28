@@ -22,6 +22,10 @@ jobs:
           profile: minimal
           toolchain: stable
 
+      - name: Set file permissions
+        run: chmod +x Cargo.toml
+        working-directory: ${{ github.workspace }}
+
       - name: Check for clippy warnings
         run: cargo clippy -- -D warnings
         working-directory: ${{ github.workspace }}

@@ -2,7 +2,7 @@ use std::net::TcpStream;
 use std::io::{self, Read};
 use std::fs::File;
 use serde::{Deserialize};
-use trust_dns_resolver::{Resolver, config::ResolverConfig, ResolverOpts};
+use trust_dns_resolver::{Resolver, config::ResolverConfig, config::ResolverOpts};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -31,7 +31,7 @@ fn run() -> io::Result<()> {
 
     let tcp = TcpStream::connect(format!("{}:22", config.host))?;
     let mut sess = ssh2::Session::new()?;
-    if let Err(err) = sess.handshake(&tcp) {
+    if let Err(err) = sess.handshake() {
         return Err(io::Error::new(io::ErrorKind::Other, err));
     }
 

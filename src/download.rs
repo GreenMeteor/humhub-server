@@ -1,8 +1,3 @@
-extern crate reqwest;
-extern crate zip;
-extern crate serde;
-extern crate serde_json;
-
 use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;

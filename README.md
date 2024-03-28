@@ -1,5 +1,12 @@
 # HumHub Server
 
+| Status | Badges |
+|-------|----------|
+| CI Build Status | [![Rust CI](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust.yml) |
+| GitHub Issues | ![GitHub Issues](https://img.shields.io/github/issues/greenmeteor/humhub-server.svg) |
+| GitHub Pull Requests | ![GitHub Pull Requests](https://img.shields.io/github/issues-pr/greenmeteor/humhub-server.svg) |
+| License | ![License](https://img.shields.io/badge/License-AGPL-license?logo=github) |
+
 HumHub Server is a Rust application for automating the deployment and setup of a HumHub instance on a remote server. It leverages SSH to execute commands remotely and configure the server according to the provided settings.
 
 ## Features

@@ -1,7 +1,6 @@
 [package]
 name = "humhub-server"
 version = "1.0.0"
-edition = "2024"
 
 [dependencies]
 trust-dns-resolver = "0.20.0"

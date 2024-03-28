@@ -16,14 +16,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      # Add a step to print the contents of the Cargo.toml file
+      - name: Print Cargo.toml
+        run: cat Cargo.toml
+        working-directory: ${{ github.workspace }}
 
-      - name: Generate tests
-        run: cargo test --lib
+      # Add a step to list files in the working directory for debugging
+      - name: List files in working directory
+        run: ls -la
+        working-directory: ${{ github.workspace }}
+
+      # Add a step to check if Cargo can parse the manifest
+      - name: Check Cargo manifest
+        run: cargo check --manifest-path=Cargo.toml
+        working-directory: ${{ github.workspace }}
+
+      # Add other steps for testing, clippy checks, etc.
+      - name: Check for clippy warnings
+        run: cargo clippy -- -D warnings
         working-directory: ${{ github.workspace }}
 
       - name: Run tests

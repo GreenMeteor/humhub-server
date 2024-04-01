@@ -3,6 +3,7 @@
 | Status | Badges |
 |-------|----------|
 | CI Build Status | [![Rust CI](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust.yml) |
+| Clippy Analyze | [![Rust Clippy Analyze](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/GreenMeteor/humhub-server/actions/workflows/rust-clippy.yml) |
 | GitHub Issues | ![GitHub Issues](https://img.shields.io/github/issues/greenmeteor/humhub-server.svg?logo=github) |
 | GitHub Pull Requests | ![GitHub Pull Requests](https://img.shields.io/github/issues-pr/greenmeteor/humhub-server.svg?logo=github) |
 | License | ![License](https://img.shields.io/badge/License-AGPL-license?logo=github) |

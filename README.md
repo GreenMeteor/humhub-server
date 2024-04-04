@@ -28,7 +28,7 @@ HumHub Server is a Rust application for automating the deployment and setup of a
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/humhub-server.git
+   git clone https://github.com/GreenMeteor/humhub-server.git
    ```
 
 2. Customize the `config.json` file with your deployment settings. Example:

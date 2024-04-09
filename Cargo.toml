@@ -3,6 +3,9 @@ name = "humhub-server"
 version = "1.0.0"
 edition = "2021"
 
+[dependencies.cron-job]
+version = "0.1.4"
+
 [dependencies.ssh2]
 version = "0.9.4"
 

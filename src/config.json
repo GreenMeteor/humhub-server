@@ -1,7 +1,7 @@
 {
-    "host": "your_host",
-    "username": "your_username",
-    "password": "your_password",
-    "domain_name": "your_domain.com",
-    "server_ip": "your_server_ip"
+    "host": "${DB_HOST}",
+    "username": "${DB_USERNAME}",
+    "password": "${DB_PASSWORD}",
+    "domain_name": "${DOMAIN_NAME}",
+    "server_ip": "${SERVER_IP}"
 }

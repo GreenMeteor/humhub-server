@@ -1,7 +1,7 @@
 {
-    "host": "${DB_HOST}",
-    "username": "${DB_USERNAME}",
-    "password": "${DB_PASSWORD}",
-    "domain_name": "${DOMAIN_NAME}",
+    "host": "${HUMHUB_CONFIG.COMPONENTS.DB.DSN}", 
+    "username": "${HUMHUB_CONFIG.COMPONENTS.DB.USERNAME}",
+    "password": "${HUMHUB_CONFIG.COMPONENTS.DB.PASSWORD}",
+    "domain_name": "${HUMHUB_CONFIG.HOME_URL}", 
     "server_ip": "${SERVER_IP}"
 }

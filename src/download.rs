@@ -18,10 +18,10 @@ pub fn download() -> io::Result<()> {
     let config: Config = serde_json::from_reader(config_file)?;
 
     // URL to download HumHub
-    let humhub_download_url = "https://download.humhub.com/downloads/install/humhub-1.15.4.zip";
+    let humhub_download_url = "https://download.humhub.com/downloads/install/humhub-1.16.2.zip";
 
     // File path to save the downloaded HumHub ZIP file
-    let humhub_zip_path = "humhub-1.15.4.zip";
+    let humhub_zip_path = "humhub-1.16.2.zip";
 
     // Directory to extract HumHub ZIP file (root directory)
     let humhub_extract_dir = "/var/www/html";

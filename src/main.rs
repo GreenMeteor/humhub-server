@@ -61,9 +61,13 @@ fn load_config(path: &str) -> io::Result<Config> {
 
 fn resolve_domain(domain: &str) -> io::Result<()> {
     let resolver = Resolver::new(ResolverConfig::default(), ResolverOpts::default())?;
-    let response = resolver.lookup_ip(domain)?;
-    println!("Resolved DNS for {}: {:?}", domain, response);
-    Ok(())
+    match resolver.lookup_ip(domain) {
+        Ok(response) => {
+            println!("Resolved DNS for {}: {:?}", domain, response);
+            Ok(())
+        }
+        Err(e) => Err(io::Error::new(io::ErrorKind::NotFound, format!("Failed to resolve domain: {}", e))),
+    }
 }
 
 fn establish_ssh_connection(config: &Config) -> io::Result<Session> {
@@ -77,7 +81,11 @@ fn establish_ssh_connection(config: &Config) -> io::Result<Session> {
     
     sess.set_tcp_stream(tcp);
     sess.handshake()?;
-    sess.userauth_password(&config.username, &config.password)?;
+
+    // Try to authenticate using password
+    if let Err(e) = sess.userauth_password(&config.username, &config.password) {
+        return Err(io::Error::new(io::ErrorKind::PermissionDenied, format!("SSH Authentication failed: {}", e)));
+    }
 
     if !sess.authenticated() {
         return Err(io::Error::new(io::ErrorKind::PermissionDenied, "Authentication failed"));
@@ -87,15 +95,14 @@ fn establish_ssh_connection(config: &Config) -> io::Result<Session> {
 }
 
 fn execute_remote_commands(sess: &mut Session, commands: &[&str]) -> io::Result<()> {
-    for cmd in commands {
-        println!("Executing: {}", cmd);
-        let mut channel = sess.channel_session()?;
-        channel.exec(cmd)?;
-        let mut output = String::new();
-        channel.read_to_string(&mut output)?;
-        println!("{}", output);
-        channel.wait_close()?;
-    }
+    let mut channel = sess.channel_session()?;
+    let commands_str = commands.join(" && ");
+    println!("Executing: {}", commands_str);
+    channel.exec(&commands_str)?;
+    let mut output = String::new();
+    channel.read_to_string(&mut output)?;
+    println!("{}", output);
+    channel.wait_close()?;
     Ok(())
 }
 

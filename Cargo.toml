@@ -28,3 +28,9 @@ version = "0.2.5"
 
 [dependencies.zip]
 version = "0.6.6"
+
+[dependencies.log]
+version = "0.4.22"
+
+[dependencies.simplelog]
+version = "0.12.2"

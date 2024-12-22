@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use reqwest::blocking;
 use zip;
+use std::time::Duration;
 
 // Define a struct to deserialize the JSON configuration
 #[derive(Debug, Deserialize)]
@@ -47,11 +48,16 @@ fn load_config(path: &str) -> io::Result<Config> {
 fn download_file(url: &str, output_path: &Path) -> io::Result<()> {
     println!("Downloading file from: {}", url);
 
-    let client = blocking::Client::new();
+    let client = blocking::Client::builder()
+        .timeout(Duration::from_secs(60))  // Add timeout for the request
+        .danger_accept_invalid_certs(false)  // Make sure SSL validation is done (set to true for secure config)
+        .build()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to create HTTP client: {}", e)))?;
+
     let mut response = client
         .get(url)
         .send()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to send request: {}", e)))?;
 
     if !response.status().is_success() {
         return Err(io::Error::new(
@@ -73,7 +79,7 @@ fn extract_zip(zip_path: &Path, extract_dir: &Path) -> io::Result<()> {
 
     let zip_file = File::open(zip_path)?;
     let mut archive = zip::ZipArchive::new(zip_file)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to read ZIP archive: {}", e)))?;
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;

@@ -25,3 +25,11 @@ version = "0.2.5"
 [[package]]
 name = "zip"
 version = "0.6.6"
+
+[[package]]
+name = "log"
+version = "0.4.22"
+
+[[package]]
+name = "simplelog"
+version = "0.12.2"

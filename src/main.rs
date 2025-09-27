@@ -76,7 +76,7 @@ fn establish_ssh_connection(config: &Config) -> io::Result<Session> {
     tcp.set_write_timeout(Some(Duration::from_secs(30)))?;
 
     let mut sess = Session::new().map_err(|e| {
-        io::Error::new(io::ErrorKind::Other, format!("Failed to create SSH session: {}", e))
+        io::Error::other(format!("Failed to create SSH session: {}", e))
     })?;
     
     sess.set_tcp_stream(tcp);

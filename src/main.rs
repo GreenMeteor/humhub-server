@@ -39,10 +39,10 @@ fn run() -> io::Result<()> {
             "sudo apt install -y apache2",
             "sudo add-apt-repository -y ppa:ondrej/php",
             "sudo apt update",
-            "sudo apt install -y php8.1 libapache2-mod-php8.1 php8.1-mysql php8.1-common php8.1-cli php8.1-curl php8.1-json php8.1-zip php8.1-gd php8.1-mbstring php8.1-xml",
+            "sudo apt install -y php8.2 libapache2-mod-php8.2 php8.2-mysql php8.2-common php8.2-cli php8.2-curl php8.2-json php8.2-zip php8.2-gd php8.2-mbstring php8.2-xml",
             "sudo apt install -y mariadb-server",
             "sudo mysql_secure_installation",
-            "sudo a2enmod php8.1",
+            "sudo a2enmod php8.2",
             "sudo systemctl restart apache2",
         ],
     )?;

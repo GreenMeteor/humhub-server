@@ -18,7 +18,7 @@ pub fn download() -> io::Result<()> {
     let config = load_config("config.json")?;
 
     // Download and extract HumHub
-    let humhub_version = "1.16.2";
+    let humhub_version = "1.18.0-beta.4";
     let humhub_download_url = format!(
         "https://download.humhub.com/downloads/install/humhub-{}.zip",
         humhub_version
